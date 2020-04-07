@@ -1,6 +1,9 @@
 # Compiled source #
-
 *.pyc
+
+# Other stuff #
+.idea/*
+ML-React-App-Template/*
 data/papers/*
 data/projects/*
 data/publications/*
