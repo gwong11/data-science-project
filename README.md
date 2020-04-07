@@ -2,6 +2,6 @@
 
 There are three parts to this project and it includes the following:
 
-1) Data retrieval 
+* Data retrieval 
 
-2) Data analysis and modeling
+* Data analysis and modeling
