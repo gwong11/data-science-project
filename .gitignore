@@ -9,6 +9,7 @@ data/oa_comm_use_file_list.csv
 data/oa_file_list.csv
 data/oa_non_comm_use_pdf.csv
 data/GoogleNews*
+nimhresearch.db
 
 # Backup
 *backup*
