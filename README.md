@@ -11,3 +11,5 @@ There are three parts to this project and it includes the following:
 * Data analysis and modeling
 
 * Mobile app (written in React Native)
+ * NIMHDataLabeler is the React Native project where the code is located. 
+ * To run, cd into the directory and do a npm start. If you have expo installed on your phone, you can basically scan the QR code that appears after the code compiles and the app will automatically load on your phone. It supports auto-loading so any changes you make in the code, it will automatically load on your phone, as long as you're connected to the same network. If you don't have the expo app installed, you can run it in an emulator.
