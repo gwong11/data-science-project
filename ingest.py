@@ -48,7 +48,7 @@ class DatabaseIngest:
             sql = 'DELETE FROM ' + table
             cur = self.conn.cursor()
             cur.execute(sql)
-            cur.execute('vacuum')
+            #cur.execute('vacuum')
             self.conn.commit()
         except Error as e:
             print(e)
@@ -61,7 +61,7 @@ class DatabaseIngest:
             sql = 'DROP TABLE ' + table
             cur = self.conn.cursor()
             cur.execute(sql)
-            cur.execute('vacuum')
+            #cur.execute('vacuum')
             self.conn.commit()
         except Error as e:
             print(e)
