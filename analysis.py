@@ -73,6 +73,10 @@ DATA_REGEX25 = re.compile(r'(opendata\.aws)', re.VERBOSE)
 #INFIX_RE = re.compile(r'''[-~]''', re.VERBOSE)
 #SIMPLE_URL_RE = re.compile(r'''^(https?:/?/? ? ?)?(www)?''', re.VERBOSE)
 
+def remove_punc(text):
+    text_nopunct = "".join([char for char in text if char not in string.punctuation])
+    return text_nopunct
+
 # create a custom analyzer class
 class MyAnalyzer(object):
 
@@ -109,10 +113,6 @@ def test_suitability(passage):
         suitability = False
 
     return(suitability)
-
-def remove_punc(text):
-    text_nopunct = "".join([char for char in text if char not in string.punctuation])
-    return text_nopunct
 
 '''
 def custom_tokenizer(nlp):
@@ -276,23 +276,23 @@ def prepare_data(filename, verbose=False):
     #print(new_df.head(10))
     #print(new_df.tail(10))
 
+    # Total number of records (with nulls)
+    print("Count of records (with nulls): \n" + str(new_df.data_reuse.count()))
+    print()
+
+    # Checking missing values
+    print("Count of missing values: \n" + str(new_df.isnull().sum()))
+    print()
+    print("Rows where text is missing: ")
+    print(new_df[new_df['text'].isnull()])
+    print()
+
+    # Total number of records (without nulls)
+    new_df2 = new_df.dropna(inplace=False)
+    print("Count of records (without nulls): \n" + str(new_df2.data_reuse.count()))
+    print()
+
     if verbose:
-        # Total number of records (with nulls)
-        print("Count of records (with nulls): \n" + str(new_df.data_reuse.count()))
-        print()
-
-        # Checking missing values
-        print("Count of missing values: \n" + str(new_df.isnull().sum()))
-        print()
-        print("Rows where text is missing: ")
-        print(new_df[new_df['text'].isnull()])
-        print()
-
-        # Total number of records (without nulls)
-        new_df2 = new_df.dropna(inplace=False)
-        print("Count of records (without nulls): \n" + str(new_df2.data_reuse.count()))
-        print()
-
         # Balance of data
         print("Count by data_reuse: \n\n" + str(new_df2.groupby('data_reuse').count()))
         print()
@@ -366,6 +366,9 @@ def model(filename, model_type):
         # Shape without Custom tokenizer - train (1502, 7103)
         # Shape without Custom tokenizer - test (376, 7103)
 
+        # Shape with Custom tokenizer - train (1502, 7553)
+        # Shape with Custom tokenizer - test (376, 7553)
+
         #vectorizer_count = CountVectorizer()
         vectorizer_count = CountVectorizer(analyzer=analyzer)
         #sentence_vectors_count = vectorizer_count.fit_transform(new_df2['text'])
@@ -386,8 +389,8 @@ def model(filename, model_type):
         print(str(ordered_count))
         print()
 
-        print(vectorizer_count.get_feature_names())
-        print()
+        #print(vectorizer_count.get_feature_names())
+        #print()
 
         # TFIDF
         #vectorizer_tfidf = TfidfVectorizer(norm = False, smooth_idf = False)
@@ -457,7 +460,9 @@ def model(filename, model_type):
             models.append(('Naive Bayes', classifier_nb))
             models.append(('SVM', classifier_svm))
             models.append(('Random Forest', classifier_rf))
+            print("Using Count:")
             compare_models(models, 7, count_X_train, y_train, 'count')
+            print("Using TFIDF:")
             compare_models(models, 7, tfidf_X_train, y_train, 'tfidf')
 
         elif model_type == "active":
@@ -469,16 +474,57 @@ def model(filename, model_type):
             model = input("Enter machine learning model to use (Default: LR): ")
             query_strategy = input("Enter query_strategy to use (Default: US): ")
             n_queries = input("Enter number of queries (Default: 10): ")
-            n_initial = input("Enter number to set n_initial (Default: 100): ")
+            print()
 
-            if not model or not query_strategy or not n_queries or not n_initial:
+            if not model or not query_strategy or not n_queries:
                 model = 'LR'
                 query_strategy = 'US'
                 n_queries = int(10)
-                n_initial = int(100)
                     
-            if filename and new_data_filename and n_queries and model.upper() in accepted_models and query_strategy.upper() in accepted_query_strategies:
-                print("Enter here")
+            if filename and new_data_filename and model.upper() in accepted_models and query_strategy.upper() in accepted_query_strategies:
+                # Using count vectorizer
+                print("##################################")
+                print("Using count vectorizer:")
+                print("##################################")
+                print()
+
+                # Date,PMID,Passage,Data
+                df = pd.read_csv(new_data_filename, header=0)
+                df['Data_Reuse'] = None
+                print(df['Passage'].head(10))
+                #print(df.tail(10))
+                print()
+
+                # Total number of records (with nulls)
+                print("Count of records: \n" + str(df.Passage.count()))
+                print()
+
+                # Checking missing values
+                print("Count of missing values: \n" + str(df.isnull().sum()))
+                print()
+                print("Rows where text is missing: ")
+                print(df[df['Passage'].isnull()])
+                print()
+
+                # Tokenize, add vocabulary, and encode new data
+                count_X_new = vectorizer_count.fit_transform(df['Passage'])
+
+                # Re-encode training/test documents with the new vocabulary 
+                count_X_train = vectorizer_count.transform(sentences_train)
+                count_X_test = vectorizer_count.transform(sentences_test)
+
+                print("Count Vectorizer (New): ")
+                print(count_X_new.toarray())
+                print(str(count_X_new.shape))
+                print()
+
+                print("CountVectorizer Vocabulary (New): ")
+                ordered_new_count = dict(sorted(vectorizer_count.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:50])
+                print(str(ordered_new_count))
+                print()
+
+                active_learning(count_X_train, y_train, count_X_test, y_test, df['Passage'], count_X_new, model, query_strategy, n_queries,
+                                    "/Users/G/Loyola/Spring2020/DS796/active_model_count_" + model + ".sav")
                 print()
             else:
                 print("Something went wrong with your input(s). Please see help for more info and check your inputs.")
@@ -488,7 +534,7 @@ def model(filename, model_type):
         print("Encountered Error: ", sys.exc_info())
         raise
 
-def active_learning(X_train, y_train, new_data, model, qstrategy, n_queries):
+def active_learning(X_train, y_train, X_test, y_test, orig_text, X_new, model, qstrategy, n_queries, model_filename):
 
     classifier = None
     strategy = None
@@ -520,6 +566,29 @@ def active_learning(X_train, y_train, new_data, model, qstrategy, n_queries):
                  query_strategy=strategy,
                  X_training=X_train, y_training=y_train
              )
+
+    accuracy_scores = [learner.score(X_test, y_test)]
+
+    for i in range(n_queries):
+        #print(X_train.shape)
+        #print(X_new.shape)
+        #print(orig_text.iloc[0])
+        query_idx, query_inst = learner.query(X_new)
+        #print(query_inst)
+        #print(query_idx)
+        print(orig_text.iloc[query_idx[0]])
+
+        print("Is this a data reuse statement or not?")
+        y_new = np.array([int(input())], dtype=int)
+        learner.teach(query_inst.reshape(1, -1), y_new)
+
+        X_new = np.delete(X_new, query_idx, axis=0)
+        accuracy_scores.append(learner.score(X_test, y_test))
+        print()
+
+    pickle.dump(learner, open(model_filename, 'wb'))
+    print("Model saved: ", model_filename)
+    print()
 
 def generateWordCloud(filename):
     df = pd.read_csv(filename, header=0)
@@ -589,7 +658,6 @@ def help():
               MS - Margin Sampling
               US - Uncertainty Sampling (Default)
               Default # of queries: 10
-              Default n_initial: 100 (change this value to see how it impacts the algorithm)
           5:  WordCloud
           q:  Quit
           h:  Help
