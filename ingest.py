@@ -83,6 +83,12 @@ class DatabaseIngest:
         self.conn.commit()
 
     '''
+    Vacuum databse
+    '''
+    def vac(self):
+        self.conn.execute("VACUUM")
+
+    '''
     Close database
     '''
     def close(self):

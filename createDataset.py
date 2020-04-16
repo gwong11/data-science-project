@@ -314,4 +314,5 @@ if __name__ == '__main__':
 
         arg = input("Enter option or h for help: ")
 
+    conn.vac()
     conn.close()
