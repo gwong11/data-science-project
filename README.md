@@ -1,4 +1,6 @@
-# NIMH - Labeling data re-use statements with Active Learning
+# NIMH - Labeling data reuse statements with Active Learning
+
+NOTE: The papers are not in the repository, as the files were too big. Below shows how you could retrieve the paper using the scripts I have written, to do further analysis.
 
 There are three parts to this project and it includes the following:
 
