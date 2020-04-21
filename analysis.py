@@ -40,6 +40,7 @@ from modAL.uncertainty import uncertainty_sampling
 
 #pd.options.display.max_columns = None
 #pd.set_option('display.max_colwidth', -1)
+#pd.set_option('display.max_rows', None)
 
 FILE_REGEX = re.compile(r'NIMH_research_papers_[0-9]+\.json', re.VERBOSE)
 DATA_REGEX1 = re.compile(r'(github)', re.VERBOSE) 
@@ -482,11 +483,6 @@ def model(filename, model_type):
                 n_queries = int(10)
                     
             if filename and new_data_filename and model.upper() in accepted_models and query_strategy.upper() in accepted_query_strategies:
-                # Using count vectorizer
-                print("##################################")
-                print("Using count vectorizer:")
-                print("##################################")
-                print()
 
                 # Date,PMID,Passage,Data
                 df = pd.read_csv(new_data_filename, header=0)
@@ -498,12 +494,20 @@ def model(filename, model_type):
                 # Total number of records (with nulls)
                 print("Count of records: \n" + str(df.Passage.count()))
                 print()
+                print("Count of unique records: \n" + str(df.groupby(['PMID']).count()))
+                print()
 
                 # Checking missing values
                 print("Count of missing values: \n" + str(df.isnull().sum()))
                 print()
                 print("Rows where text is missing: ")
                 print(df[df['Passage'].isnull()])
+                print()
+
+                # Using count vectorizer
+                print("##################################")
+                print("Using count vectorizer:")
+                print("##################################")
                 print()
 
                 # Tokenize, add vocabulary, and encode new data
@@ -523,7 +527,7 @@ def model(filename, model_type):
                 print(str(ordered_new_count))
                 print()
 
-                active_learning(count_X_train, y_train, count_X_test, y_test, df['Passage'], count_X_new, model, query_strategy, n_queries,
+                active_learning("count", count_X_train, y_train, count_X_test, y_test, df['Passage'], count_X_new, model, query_strategy, n_queries,
                                     "/Users/G/Loyola/Spring2020/DS796/active_model_count_" + model + ".sav")
                 print()
             else:
@@ -534,7 +538,7 @@ def model(filename, model_type):
         print("Encountered Error: ", sys.exc_info())
         raise
 
-def active_learning(X_train, y_train, X_test, y_test, orig_text, X_new, model, qstrategy, n_queries, model_filename):
+def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_text, X_new, model, qstrategy, n_queries, model_filename):
 
     classifier = None
     strategy = None
@@ -585,6 +589,20 @@ def active_learning(X_train, y_train, X_test, y_test, orig_text, X_new, model, q
         X_new = np.delete(X_new, query_idx, axis=0)
         accuracy_scores.append(learner.score(X_test, y_test))
         print()
+
+    # Accuracy of classier
+    with plt.style.context('seaborn-white'):
+        plt.figure(figsize=(10, 5))
+        plt.title('Accuracy of the classifier during the active learning')
+        plt.plot(range(n_queries+1), accuracy_scores)
+        plt.scatter(range(n_queries+1), accuracy_scores)
+        plt.xlabel('number of queries')
+        plt.ylabel('accuracy')
+        plt.savefig('/Users/G/Loyola/Spring2020/DS796/active_model_' + vectorizer_method + '_accuracy.png')
+        print("Graph saved: /Users/G/Loyola/Spring2020/DS796/active_model_" + vectorizer_method + "_accuracy.png")
+        print()
+        #plt.show()
+        plt.close()
 
     pickle.dump(learner, open(model_filename, 'wb'))
     print("Model saved: ", model_filename)
