@@ -16,3 +16,9 @@ nimhresearch.db
 
 # Backup
 *backup*
+
+# app
+NIMHDataLabeler/node_modules/*
+NIMHDataLabeler/*lock*
+NIMHDataLabeler/*.alt
+
