@@ -24,7 +24,8 @@ class DatabaseIngest:
     '''
     def create_table(self, table, schema):
         try:
-            sql = 'CREATE TABLE IF NOT EXISTS ' + table + ' (' + schema + ');'
+            sql = 'CREATE TABLE IF NOT EXISTS ' + table + 
+                    ' (' + schema + ');'
             curr = self.conn.cursor()
             curr.execute(sql)
             self.conn.commit()
@@ -36,7 +37,10 @@ class DatabaseIngest:
     '''
     def insert_record(self, table, exist_strategy, df):
         try:
-            df.to_sql(table, self.conn, if_exists=exist_strategy, index=False)
+            df.to_sql(table, 
+                    self.conn, 
+                    if_exists=exist_strategy, 
+                    index=False)
         except Error as e:
             print(e)
 
