@@ -30,6 +30,8 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
+from sklearn.metrics import recall_score
+from scipy.sparse import csr_matrix
 from modAL.models import ActiveLearner
 from modAL.uncertainty import classifier_entropy
 from modAL.uncertainty import classifier_margin
@@ -373,7 +375,8 @@ def model(filename, model_type):
         #vectorizer_count = CountVectorizer()
         vectorizer_count = CountVectorizer(analyzer=analyzer)
         #sentence_vectors_count = vectorizer_count.fit_transform(new_df2['text'])
-        vectorizer_count.fit(sentences_train)
+        #vectorizer_count.fit(sentences_train)
+        vectorizer_count.fit(X)
         count_X_train = vectorizer_count.transform(sentences_train)
         count_X_test = vectorizer_count.transform(sentences_test)
         print("Count Vectorizer (train): ")
@@ -385,19 +388,20 @@ def model(filename, model_type):
         print(str(count_X_test.shape))
         print()
 
-        print("CountVectorizer Vocabulary: ")
-        ordered_count = dict(sorted(vectorizer_count.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:50])
+        print("Vocabulary: ")
+        ordered_count = dict(sorted(vectorizer_count.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:1000])
         print(str(ordered_count))
         print()
 
-        #print(vectorizer_count.get_feature_names())
+        #print(len(vectorizer_count.get_feature_names()))
         #print()
 
         # TFIDF
         #vectorizer_tfidf = TfidfVectorizer(norm = False, smooth_idf = False)
         vectorizer_tfidf = TfidfVectorizer(analyzer=analyzer)
         #sentence_vectors_tfidf = vectorizer_tfidf.fit_transform(new_df2['text'])
-        vectorizer_tfidf.fit(sentences_train)
+        #vectorizer_tfidf.fit(sentences_train)
+        vectorizer_tfidf.fit(X)
         tfidf_X_train = vectorizer_tfidf.transform(sentences_train)
         tfidf_X_test = vectorizer_tfidf.transform(sentences_test)
         print("TFIDF Vectorizer (train): ")
@@ -438,7 +442,7 @@ def model(filename, model_type):
                         "/Users/G/Loyola/Spring2020/DS796/finalized_model_tfidf_nb.sav")
         
             print("Support Vector Machines: ")
-            classifier_svm = SVC(probability=True)
+            classifier_svm = SVC(kernel='linear', probability=True)
             method_ML(classifier_svm, "SVM", "CountVectorizer", count_X_train,
                         count_X_test, y_train, y_test, "/Users/G/Loyola/Spring2020/DS796/count_svm_roc_graph.png",
                      "/Users/G/Loyola/Spring2020/DS796/finalized_model_count_svm.sav")
@@ -468,21 +472,30 @@ def model(filename, model_type):
 
         elif model_type == "active":
             print("Active Learning: ")
+            accepted_vectorizers = ['COUNT', 'TFIDF']
             accepted_models = ['LR', 'NB', 'SVM', 'RF']
             accepted_query_strategies = ['CE', 'CM', 'CU', 'ES', 'MS', 'US']
 
             new_data_filename = input("Enter new data file: ")
-            model = input("Enter machine learning model to use (Default: LR): ")
-            query_strategy = input("Enter query_strategy to use (Default: US): ")
+            vectorizer = input("Enter the vectorizer to use (Default: COUNT): ").upper()
+            model = input("Enter machine learning model to use (Default: LR): ").upper()
+            query_strategy = input("Enter query_strategy to use (Default: US): ").upper()
             n_queries = input("Enter number of queries (Default: 10): ")
             print()
 
-            if not model or not query_strategy or not n_queries:
+            if not vectorizer:
+                vectorizer = 'COUNT'
+
+            if not model:
                 model = 'LR'
+
+            if not query_strategy:
                 query_strategy = 'US'
+
+            if not n_queries:
                 n_queries = int(10)
-                    
-            if filename and new_data_filename and model.upper() in accepted_models and query_strategy.upper() in accepted_query_strategies:
+
+            if filename and new_data_filename and vectorizer.upper() in accepted_vectorizers and model.upper() in accepted_models and query_strategy.upper() in accepted_query_strategies:
 
                 # Date,PMID,Passage,Data
                 df = pd.read_csv(new_data_filename, header=0)
@@ -504,32 +517,64 @@ def model(filename, model_type):
                 print(df[df['Passage'].isnull()])
                 print()
 
-                # Using count vectorizer
-                print("##################################")
-                print("Using count vectorizer:")
-                print("##################################")
-                print()
+                if vectorizer == "COUNT":
+                    # Using count vectorizer
+                    print("##################################")
+                    print("Using count vectorizer:")
+                    print("##################################")
+                    print()
 
-                # Tokenize, add vocabulary, and encode new data
-                count_X_new = vectorizer_count.fit_transform(df['Passage'])
+                    # Tokenize, add vocabulary, and encode new data
+                    count_X_new = vectorizer_count.fit_transform(df['Passage'])
 
-                # Re-encode training/test documents with the new vocabulary 
-                count_X_train = vectorizer_count.transform(sentences_train)
-                count_X_test = vectorizer_count.transform(sentences_test)
+                    # Re-encode training/test documents with the new vocabulary 
+                    count_X_train = vectorizer_count.transform(sentences_train)
+                    count_X_test = vectorizer_count.transform(sentences_test)
 
-                print("Count Vectorizer (New): ")
-                print(count_X_new.toarray())
-                print(str(count_X_new.shape))
-                print()
+                    print("Count Vectorizer (New): ")
+                    print(count_X_new.toarray())
+                    print(str(count_X_new.shape))
+                    print()
 
-                print("CountVectorizer Vocabulary (New): ")
-                ordered_new_count = dict(sorted(vectorizer_count.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:50])
-                print(str(ordered_new_count))
-                print()
+                    print("Vocabulary (New): ")
+                    ordered_new_count = dict(sorted(vectorizer_count.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:1000])
+                    print(str(ordered_new_count))
+                    print()
 
-                active_learning("count", count_X_train, y_train, count_X_test, y_test, df['Passage'], count_X_new, model, query_strategy, n_queries,
-                                    "/Users/G/Loyola/Spring2020/DS796/active_model_count_" + model + ".sav")
-                print()
+                    active_learning("count", count_X_train, y_train, count_X_test, y_test, df['Passage'], count_X_new, model, query_strategy, int(n_queries),
+                                        "/Users/G/Loyola/Spring2020/DS796/active_model_count_" + model + ".sav")
+                    print()
+                elif vectorizer == "TFIDF":
+                    # Using tfidf vectorizer
+                    print("##################################")
+                    print("Using TFIDF vectorizer:")
+                    print("##################################")
+                    print()
+
+                    # Tokenize, add vocabulary, and encode new data
+                    tfidf_X_new = vectorizer_tfidf.fit_transform(df['Passage'])
+
+                    # Re-encode training/test documents with the new vocabulary
+                    tfidf_X_train = vectorizer_tfidf.transform(sentences_train)
+                    tfidf_X_test = vectorizer_tfidf.transform(sentences_test)
+
+                    print("Tfidf Vectorizer (New): ")
+                    print(tfidf_X_new.toarray())
+                    print(str(tfidf_X_new.shape))
+                    print()
+
+                    print("Vocabulary (New): ")
+                    ordered_new_tfidf = dict(sorted(vectorizer_tfidf.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:1000])
+                    print(str(ordered_new_tfidf))
+                    print()
+
+                    active_learning("tfidf", tfidf_X_train, y_train, tfidf_X_test, y_test, df['Passage'], tfidf_X_new, model, query_strategy, int(n_queries),
+                                        "/Users/G/Loyola/Spring2020/DS796/active_model_tfidf_" + model + ".sav")
+                    print()
+                else:
+                    print("Vectorizer not supported. Please see help for more info.")
+                    print()
+
             else:
                 print("Something went wrong with your input(s). Please see help for more info and check your inputs.")
                 print()
@@ -548,7 +593,7 @@ def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_te
     elif model == 'NB':
         classifier = MultinomialNB()
     elif model == 'SVM':
-        classifier = SVC(probability=True)
+        classifier = SVC(kernel='linear', probability=True)
     elif model == 'RF':
         classifier = RandomForestClassifier()
 
@@ -572,6 +617,7 @@ def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_te
              )
 
     accuracy_scores = [learner.score(X_test, y_test)]
+    recall_scores = [recall_score(y_test, learner.predict(X_test))]
 
     for i in range(n_queries):
         #print(X_train.shape)
@@ -581,25 +627,39 @@ def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_te
         #print(query_inst)
         #print(query_idx)
         print(orig_text.iloc[query_idx[0]])
+        print("Is this a data reuse statement or not (1=yes, 0=no)?")
+        try:
+            y_new = np.array([int(input())], dtype=int)
+            if y_new in [0,1]:
+                learner.teach(query_inst.reshape(1, -1), y_new)
 
-        print("Is this a data reuse statement or not?")
-        y_new = np.array([int(input())], dtype=int)
-        learner.teach(query_inst.reshape(1, -1), y_new)
+                X_new = csr_matrix(np.delete(X_new.toarray(), query_idx, axis=0))
+                orig_text = pd.Series(np.delete(orig_text.to_numpy(), query_idx, axis=0))
+                accuracy_scores.append(learner.score(X_test, y_test))
+                recall_scores.append(recall_score(y_test, learner.predict(X_test)))
+                #print(accuracy_scores)
+                #print(recall_scores)
+                print()
+            else:
+                print("Input not accepted. Type '1' for yes or '0' for no")
+                print()
+                return
+        except:
+            print("Incorrect input. Skipping.")
+            print()
 
-        X_new = np.delete(X_new, query_idx, axis=0)
-        accuracy_scores.append(learner.score(X_test, y_test))
-        print()
-
-    # Accuracy of classier
+    # Performance of classier
     with plt.style.context('seaborn-white'):
         plt.figure(figsize=(10, 5))
-        plt.title('Accuracy of the classifier during the active learning')
-        plt.plot(range(n_queries+1), accuracy_scores)
-        plt.scatter(range(n_queries+1), accuracy_scores)
-        plt.xlabel('number of queries')
-        plt.ylabel('accuracy')
-        plt.savefig('/Users/G/Loyola/Spring2020/DS796/active_model_' + vectorizer_method + '_accuracy.png')
-        print("Graph saved: /Users/G/Loyola/Spring2020/DS796/active_model_" + vectorizer_method + "_accuracy.png")
+        plt.title('Performance of the classifier during the active learning')
+        #plt.plot(range(n_queries+1), accuracy_scores)
+        #plt.scatter(range(n_queries+1), accuracy_scores)
+        plt.plot(range(n_queries+1), recall_scores)
+        plt.scatter(range(n_queries+1), recall_scores)
+        plt.xlabel('Number of queries')
+        plt.ylabel('Performance')
+        plt.savefig('/Users/G/Loyola/Spring2020/DS796/active_model_' + vectorizer_method + '_' + model + '_performance.png')
+        print("Graph saved: /Users/G/Loyola/Spring2020/DS796/active_model_" + vectorizer_method + '_' + model + "_performance.png")
         print()
         #plt.show()
         plt.close()
@@ -663,7 +723,8 @@ def help():
           3:  Write
           4:  Model
               regular (using conventional Machine Learning techniques)
-              active  (Accepted models (case insensitive): LR, NB, SVM, RF,
+              active  (Accepted vectorizers (case insensitive): COUNT (Default), TFIDF,
+                       Accepted models (case insensitive): LR, NB, SVM, RF,
                        Accepted query strategy (case insensitive): CE, CM, CU, ES, MS, US)
               LR - Logistic Regression (Default)
               NB - Naives Bayes
