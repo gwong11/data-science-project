@@ -83,7 +83,7 @@ def remove_punc(text):
 # create a custom analyzer class
 class MyAnalyzer(object):
 
-    # load spaCy's english model and define the tokenizer/lemmatizer
+    # load spaCy's English model and define the tokenizer/lemmatizer
     def __init__(self):
         spacy.load('en')
         self.lemmatizer_ = spacy.lang.en.English()
