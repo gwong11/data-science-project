@@ -45,6 +45,18 @@ class DatabaseIngest:
             print(e)
 
     '''
+    Update record with single criteria
+    '''
+    def update_record(self, table, field, criteria, pmid, data_reuse):
+        try:
+            sql = 'UPDATE ' + table + ' SET ' + field ' = ' + data_reuse ' WHERE ' + criteria + ' = ' + pmid
+            cur = self.conn.cursor()
+            cur.execute(sql)
+            self.conn.commit()
+        except Error as e:
+            print(e)
+
+    '''
     Delete all record
     '''
     def delete_record(self, table):
