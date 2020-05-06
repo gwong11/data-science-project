@@ -1,9 +1,9 @@
 import React, { Component, useEffect, useState } from 'react';
 import { Alert, Dimensions, StyleSheet, View, Text, ImageBackground, TextInput, Button } from 'react-native';
-import { DocumentPicker, ImagePicker } from 'expo';
 import { Input } from 'react-native-elements';
-import ErrorBoundary from 'react-native-error-boundary'
-import CustomHeader from "./CustomHeader"
+import ErrorBoundary from 'react-native-error-boundary';
+import CustomHeader from "./CustomHeader";
+import * as DocumentPicker from 'expo-document-picker';
 
 var { height, width } = Dimensions.get('window');
 
@@ -15,6 +15,7 @@ const CustomFallback = (props: { error: Error, resetError: Function }) => {
   </View>
 }
 
+/*
 const TryUploadFile = () => {
 
     // Pick a single file
@@ -38,7 +39,7 @@ const TryUploadFile = () => {
             throw err;
         }
     }
-}
+}*/
 
                             /*<TextInput style = {styles.input}
                                 underlineColorAndroid = "transparent"
@@ -50,7 +51,7 @@ const TryUploadFile = () => {
 //function Home(props) {
 const Home = (props) => {
     
-    const [bodyText, setBodyText] = useState("/home/G/sample.csv");
+    const [filename, setFilename] = useState("");
     const [show, setShow] = useState(false);
 
     /*useEffect(() => {
@@ -62,14 +63,21 @@ const Home = (props) => {
     }, "");*/
 
 
-    const uploadFilename = () => {
-        if (show == true) {
-            setShow(false);
-        } else {
+     const _pickDocument = async () => {
+	    let result = await DocumentPicker.getDocumentAsync({});
+		//alert(result.uri);
+        console.log(result);
+
+        if (result.type == "success") {
+            setFilename(result.name);
             setShow(true);
         }
-    }
-
+        else {
+            alert("Please select a data file to upload!")
+            setShow(false);
+        }
+	}
+    
     return (
       <View style={styles.background}>
         <ImageBackground source={require('../assets/NIMH-Logo.png')}
@@ -82,11 +90,11 @@ const Home = (props) => {
                         <View style={styles.inputContainer}>
                             <Button style={styles.input}
                                     title="Upload File" 
-                                    onPress={uploadFilename}/>
+                                    onPress={_pickDocument}/>
                             {show ? (
                                 <Input  editable={false} 
                                         leftIcon={{ type: 'font-awesome', name: 'file' }}
-                                        value={ bodyText } 
+                                        value={ filename } 
                                         leftIconContainerStyle = {{marginLeft:10, padding: 10}}
                                 />
                             ) : null }
