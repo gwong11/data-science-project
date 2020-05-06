@@ -1,5 +1,5 @@
 import React from "react";
-import { Header } from "react-native-elements";
+import { Header, Image, Styleheet } from "react-native-elements";
 
 import Menu from "./Menu";
 
@@ -9,7 +9,7 @@ const CustomHeader = props => {
        placement="center"
        centerComponent={{ text: props.title, style: { fontWeight: 'bold', fontSize: 26, color: '#fff' } }}
        rightComponent=<Menu navigation={props.navigation} />
-       styles={{backgroundColor: 'transparent'}}
+       styles={{backgroundColor: 'transparent', flex: 1}}
        statusBarProps = {{ barStyle: "light-content" }}
     />
   );
