@@ -29,6 +29,7 @@
     "react-native-file-picker": "0.0.19",
     "react-native-gesture-handler": "^1.6.1",
     "react-native-keyboard-aware-scroll-view": "^0.9.1",
+    "react-native-keyboard-aware-scrollview": "^2.1.0",
     "react-native-reanimated": "^1.7.0",
     "react-native-router-flux": "^4.2.0",
     "react-native-safe-area-context": "^0.7.3",
@@ -42,6 +43,6 @@
     "@babel/core": "^7.0.0",
     "babel-preset-expo": "~8.0.0"
   },
-  "proxy": "http://localhost:5000",
+  "proxy": "http://0.0.0.0:5000",
   "private": true
 }

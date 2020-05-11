@@ -1,5 +1,5 @@
 import React, { Component, useEffect, useState } from 'react';
-import { Alert, Dimensions, StyleSheet, View, Text, ImageBackground, TextInput, Button } from 'react-native';
+import { ScrollView, Alert, Dimensions, StyleSheet, View, Text, ImageBackground, TextInput, Button } from 'react-native';
 import { Input } from 'react-native-elements';
 import ErrorBoundary from 'react-native-error-boundary';
 import CustomHeader from "./CustomHeader";
@@ -15,55 +15,16 @@ const CustomFallback = (props: { error: Error, resetError: Function }) => {
   </View>
 }
 
-/*
-const TryUploadFile = () => {
-
-    // Pick a single file
-    try {
-            const res = DocumentPicker.show({
-            type: [DocumentPicker.types.allFiles],
-            });
-            console.log(
-            res.uri,
-            res.type, // mime type
-            res.name,
-            res.size
-            );
-
-    } catch (err) {
-        if (DocumentPicker.isCancel(err)) {
-        // User cancelled the picker, exit any dialogs or menus and move on
-            alert('Canceled from document picker');
-        } else {
-            alert('Unknown Error: ' + JSON.stringify(err));
-            throw err;
-        }
-    }
-}*/
-
-                            /*<TextInput style = {styles.input}
-                                underlineColorAndroid = "transparent"
-                                placeholder = "File Path"
-                                placeholderTextColor = "#9a73ef"
-                                autoCapitalize = "none"
-                            />*/
-
 //function Home(props) {
 const Home = (props) => {
     
     const [filename, setFilename] = useState("");
     const [show, setShow] = useState(false);
+    const [show2, setShow2] = useState(false);
+    const [label, setLabel] = useState(null);
+    const [test, setTest] = useState("");
 
-    /*useEffect(() => {
-        fetch("/upload").then(response => 
-            response.json().then(data => {
-                setFilename(data); 
-        })
-      );
-    }, "");*/
-
-
-     const _pickDocument = async () => {
+    const _pickDocument = async () => {
 	    let result = await DocumentPicker.getDocumentAsync({});
 		//alert(result.uri);
         console.log(result);
@@ -78,10 +39,28 @@ const Home = (props) => {
         }
 	}
     
+    const _query = async () => {
+        fetch("/")
+            .then(response => response.json())
+            .then(data => { 
+                console.log(data);
+                setTest(data); 
+                setShow2(true)
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    }
+
+    const _handleLabel = (label) => {
+        setLabel(label)
+        console.log(label)
+    }
+
     return (
       <View style={styles.background}>
-        <ImageBackground source={require('../assets/NIMH-Logo.png')}
-            style={{width: '100%', height: '100%'}}
+        <ImageBackground
+            style={{position: 'absolute', width: '100%', height: '100%'}}
             imageStyle={{resizeMode: 'contain', width: '50%', height: '180%', position : 'absolute', left: 200, right: 100}}
         >
             <CustomHeader navigation={props.navigation} title="NIMH Data Labeler" />
@@ -95,6 +74,7 @@ const Home = (props) => {
                                 <Input  editable={false} 
                                         leftIcon={{ type: 'font-awesome', name: 'file' }}
                                         value={ filename } 
+                                        multiline={true}
                                         leftIconContainerStyle = {{marginLeft:10, padding: 10}}
                                 />
                             ) : null }
@@ -103,9 +83,33 @@ const Home = (props) => {
                             <Button style={styles.button} 
                                     title="Query"
                                     color="green"
-                                    onPress={() => Alert.alert('Button pressed')}/>
+                                    onPress={_query}/>
                             <Button style={styles.button} title="Reset" color="red"/>
                         </View>
+                        {show2 ? (
+                            <View>
+                                <View style={styles.outputContainer}>
+                                    <Input editable={false}
+                                        value=""
+                                        multiline={true}
+                                    />
+                                </View>
+                                <View style={styles.labelContainer}>
+                                    <TextInput style={styles.labelInput}
+                                               placeholder = "Label"
+                                               placeholderTextColor = "#9a73ef"
+                                               autoCapitalize = "none"
+                                               onChangeText = {_handleLabel}
+                                    />
+                                </View>
+                                <View style={styles.submitContainer}>
+                                    <Button style={styles.button} 
+                                        title="Submit" 
+                                        color="grey"
+                                    />
+                                </View>
+                            </View>
+                        ) : null }
                 </ErrorBoundary>
             </View>
         </ImageBackground>
@@ -145,6 +149,28 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1 
+  },
+  outputContainer: {
+      marginLeft: 50,
+      marginRight: 50,
+      fontSize: 20,
+      justifyContent: 'space-between',
+      padding: 10 
+  },
+  labelContainer: {
+      marginLeft: 180
+  },
+  labelInput: {
+      width: 50,
+      height: 50,
+      borderWidth: 1, 
+      padding: 5,
+  },
+  submitContainer: {
+      width: 100,
+      marginTop: 50,
+      marginLeft: 160,
+      justifyContent: 'center'
   }
 });
 
