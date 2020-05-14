@@ -137,8 +137,8 @@ def wm2df(wm, feat_names):
 def filter_text():
     data_dir = '/Users/G/git/repository/data-science-project/data/papers'
     files = sorted(os.listdir(data_dir))
-    papers = pd.DataFrame(columns=['Date', 'PMID', 'Passage', 'Data'])
-    #papers = papers.append(pd.DataFrame({'Date': [20191214], 'PMID': ['00000000000'], 'Passage': ['This is a test']}), ignore_index = True)
+    papers = pd.DataFrame(columns=['Date', 'PMID', 'text', 'data'])
+    #papers = papers.append(pd.DataFrame({'Date': [20191214], 'PMID': ['00000000000'], 'text': ['This is a test']}), ignore_index = True)
 
     #no_match_filename = "/Users/G/git/repository/data-science-project/data/NIMH_pmids_noMatchRegex.txt"
 
@@ -177,7 +177,7 @@ def filter_text():
                                         re.search(DATA_REGEX22, s.lower()) or re.search(DATA_REGEX23, s.lower()) or re.search(DATA_REGEX24, s.lower()) or 
                                         re.search(DATA_REGEX25, s.lower()) )
                                 if m is not None:
-                                    papers = papers.append(pd.DataFrame({'Date': [row.date], 'PMID': [pmid], 'Passage': [s.strip()], 'Data': [m.group(1)]}), 
+                                    papers = papers.append(pd.DataFrame({'Date': [row.date], 'PMID': [pmid], 'text': [s.strip()], 'data': [m.group(1)]}), 
                                             ignore_index = True)
                         #else:
                         #    print(passage['infons']['section_type'] + ',' + passage['infons']['type'] + ',' + passage['text'])
@@ -189,13 +189,13 @@ def filter_text():
             #if count == 4:
             #    print(papers.head())
             #    #print(papers.groupby(['PMID']).count())
-            #    print(papers['Passage'][2])
+            #    print(papers['text'][2])
             #    exit(1)
             count += 1
     #print(papers.head())
     #print(len(papers))
     #print(papers.groupby(['PMID']).count())
-    #print(papers['Passage'][0])
+    #print(papers['text'][0])
 
     # pickle dataframe 
     papers.to_pickle("/Users/G/git/repository/data-science-project/data/NIMH_pmids_matched.pkl")
@@ -206,7 +206,7 @@ def read_df(filename="/Users/G/git/repository/data-science-project/data/NIMH_pmi
     print(unpickled_df.tail())
     print(len(unpickled_df['PMID']))
     print(unpickled_df.groupby(['PMID']).count())
-    print(unpickled_df['Passage'][4])
+    print(unpickled_df['text'][4])
 
 def write_df_to_csv(output_filename, filename="/Users/G/git/repository/data-science-project/data/NIMH_pmids_matched.pkl"):
     unpickled_df = pd.read_pickle(filename)
@@ -497,15 +497,15 @@ def model(filename, model_type):
 
             if filename and new_data_filename and vectorizer.upper() in accepted_vectorizers and model.upper() in accepted_models and query_strategy.upper() in accepted_query_strategies:
 
-                # Date,PMID,Passage,Data
+                # Date,PMID,text,data
                 df = pd.read_csv(new_data_filename, header=0)
-                df['Data_Reuse'] = None
-                print(df['Passage'].head(10))
+                df['data_reuse'] = None
+                print(df['text'].head(10))
                 #print(df.tail(10))
                 print()
 
                 # Total number of records (with nulls)
-                print("Count of records: \n" + str(df.Passage.count()))
+                print("Count of records: \n" + str(df.text.count()))
                 print()
                 print("Count of unique records: \n" + str(df.groupby(['PMID']).count()))
                 print()
@@ -514,7 +514,7 @@ def model(filename, model_type):
                 print("Count of missing values: \n" + str(df.isnull().sum()))
                 print()
                 print("Rows where text is missing: ")
-                print(df[df['Passage'].isnull()])
+                print(df[df['text'].isnull()])
                 print()
 
                 if vectorizer == "COUNT":
@@ -525,7 +525,7 @@ def model(filename, model_type):
                     print()
 
                     # Tokenize, add vocabulary, and encode new data
-                    count_X_new = vectorizer_count.fit_transform(df['Passage'])
+                    count_X_new = vectorizer_count.fit_transform(df['text'])
 
                     # Re-encode training/test documents with the new vocabulary 
                     count_X_train = vectorizer_count.transform(sentences_train)
@@ -541,7 +541,7 @@ def model(filename, model_type):
                     print(str(ordered_new_count))
                     print()
 
-                    active_learning("count", count_X_train, y_train, count_X_test, y_test, df['Passage'], count_X_new, model, query_strategy, int(n_queries),
+                    active_learning("count", count_X_train, y_train, count_X_test, y_test, df['text'], count_X_new, model, query_strategy, int(n_queries),
                                         "/Users/G/Loyola/Spring2020/DS796/active_model_count_" + model + ".sav")
                     print()
                 elif vectorizer == "TFIDF":
@@ -552,7 +552,7 @@ def model(filename, model_type):
                     print()
 
                     # Tokenize, add vocabulary, and encode new data
-                    tfidf_X_new = vectorizer_tfidf.fit_transform(df['Passage'])
+                    tfidf_X_new = vectorizer_tfidf.fit_transform(df['text'])
 
                     # Re-encode training/test documents with the new vocabulary
                     tfidf_X_train = vectorizer_tfidf.transform(sentences_train)
@@ -568,7 +568,7 @@ def model(filename, model_type):
                     print(str(ordered_new_tfidf))
                     print()
 
-                    active_learning("tfidf", tfidf_X_train, y_train, tfidf_X_test, y_test, df['Passage'], tfidf_X_new, model, query_strategy, int(n_queries),
+                    active_learning("tfidf", tfidf_X_train, y_train, tfidf_X_test, y_test, df['text'], tfidf_X_new, model, query_strategy, int(n_queries),
                                         "/Users/G/Loyola/Spring2020/DS796/active_model_tfidf_" + model + ".sav")
                     print()
                 else:
@@ -629,6 +629,7 @@ def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_te
         print(orig_text.iloc[query_idx[0]])
         print("Is this a data reuse statement or not (1=yes, 0=no)?")
         try:
+            #TODO: add label to original dataframe and write out dataframe
             y_new = np.array([int(input())], dtype=int)
             if y_new in [0,1]:
                 learner.teach(query_inst.reshape(1, -1), y_new)
@@ -676,7 +677,7 @@ def generateWordCloud(filename):
             height = 2000,
             background_color = 'black',
             stopwords = STOPWORDS,
-            mask = mask).generate(str(df['Data']))
+            mask = mask).generate(str(df['data']))
     fig = plt.figure(
             figsize = (40, 30),
             facecolor = 'k',

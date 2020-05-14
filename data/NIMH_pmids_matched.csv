@@ -1,4 +1,4 @@
-Date,PMID,Passage,Data
+Date,PMID,text,data
 20181228,19013282,"Both IHC and IF studies of the cortex of the Cck BACarray line clearly demonstrate that EGFP-L10a is detected in small neurons positive for Calb1 but not Pvalb or Calb2, as well as in pyramidal cells (data not shown), consistent with previous in situ hybridization (ISH) data (www.stjudebgem.org; www.brain-map.org).",brain-map.org
 20181228,19013282,"For example, consistent with the ISH databases (www.stjudebgem.org; www.brain-map.org) our data clearly indicate that Penk1 is expressed in Golgi cells and in scattered cells in the molecular layer (Figure 3C, panel 1).",brain-map.org
 20181210,19065144,Individual phenotype and genotype data are available to researchers via application to the dbGaP repository.,dbgap
