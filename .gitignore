@@ -2,6 +2,7 @@
 *.pyc
 
 # Other stuff #
+*.swp
 .idea/*
 ML-React-App-Template/*
 data/papers/*
