@@ -34,7 +34,7 @@ def get_query():
         try:
             df = pd.read_csv(csv_file, header=0)
             df.dropna(inplace=True)
-            df['Data_Reuse'] = None
+            df['data_reuse'] = None
 
             print(df.shape)
             print(df.head(10))
