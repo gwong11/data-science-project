@@ -541,8 +541,9 @@ def model(filename, model_type):
                     print(str(ordered_new_count))
                     print()
 
-                    active_learning("count", count_X_train, y_train, count_X_test, y_test, df['text'], count_X_new, model, query_strategy, int(n_queries),
-                                        "/Users/G/Loyola/Spring2020/DS796/active_model_count_" + model + ".sav")
+                    active_learning("count", count_X_train, y_train, count_X_test, y_test, df, count_X_new, model, query_strategy, int(n_queries),
+                                        "/Users/G/Loyola/Spring2020/DS796/active_model_count_" + model + ".sav",
+                                        "/Users/G/git/repository/data-science-project/data/NIMH_pmids_matched_count_" + model + ".csv")
                     print()
                 elif vectorizer == "TFIDF":
                     # Using tfidf vectorizer
@@ -568,8 +569,9 @@ def model(filename, model_type):
                     print(str(ordered_new_tfidf))
                     print()
 
-                    active_learning("tfidf", tfidf_X_train, y_train, tfidf_X_test, y_test, df['text'], tfidf_X_new, model, query_strategy, int(n_queries),
-                                        "/Users/G/Loyola/Spring2020/DS796/active_model_tfidf_" + model + ".sav")
+                    active_learning("tfidf", tfidf_X_train, y_train, tfidf_X_test, y_test, df, tfidf_X_new, model, query_strategy, int(n_queries),
+                                        "/Users/G/Loyola/Spring2020/DS796/active_model_tfidf_" + model + ".sav",
+                                        "/Users/G/git/repository/data-science-project/data/NIMH_pmids_matched_tfidf_" + model + ".csv")
                     print()
                 else:
                     print("Vectorizer not supported. Please see help for more info.")
@@ -583,7 +585,7 @@ def model(filename, model_type):
         print("Encountered Error: ", sys.exc_info())
         raise
 
-def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_text, X_new, model, qstrategy, n_queries, model_filename):
+def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_df, X_new, model, qstrategy, n_queries, model_filename, df_filename):
 
     classifier = None
     strategy = None
@@ -622,32 +624,32 @@ def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_te
     for i in range(n_queries):
         #print(X_train.shape)
         #print(X_new.shape)
-        #print(orig_text.iloc[0])
+        #print(orig_df.iloc[0])
         query_idx, query_inst = learner.query(X_new)
         #print(query_inst)
         #print(query_idx)
-        print(orig_text.iloc[query_idx[0]])
+        print(orig_df['text'].iloc[query_idx[0]])
         print("Is this a data reuse statement or not (1=yes, 0=no)?")
         try:
-            #TODO: add label to original dataframe and write out dataframe
             y_new = np.array([int(input())], dtype=int)
             if y_new in [0,1]:
+                orig_df.loc[query_idx[0], 'data_reuse'] = y_new
                 learner.teach(query_inst.reshape(1, -1), y_new)
 
                 X_new = csr_matrix(np.delete(X_new.toarray(), query_idx, axis=0))
-                orig_text = pd.Series(np.delete(orig_text.to_numpy(), query_idx, axis=0))
+
                 accuracy_scores.append(learner.score(X_test, y_test))
                 recall_scores.append(recall_score(y_test, learner.predict(X_test)))
                 #print(accuracy_scores)
                 #print(recall_scores)
                 print()
             else:
-                print("Input not accepted. Type '1' for yes or '0' for no")
+                print("Input not accepted. Type '1' for yes or '0' for no. Skipping.")
                 print()
-                return
         except:
-            print("Incorrect input. Skipping.")
+            print("Encountered Error: " + str(sys.exc_info()))
             print()
+            return
 
     # Performance of classier
     with plt.style.context('seaborn-white'):
@@ -667,6 +669,10 @@ def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_te
 
     pickle.dump(learner, open(model_filename, 'wb'))
     print("Model saved: ", model_filename)
+    print()
+
+    orig_df.to_csv(df_filename, index=False)
+    print("Dataframe saved: ", df_filename)
     print()
 
 def generateWordCloud(filename):
