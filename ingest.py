@@ -23,8 +23,7 @@ class DatabaseIngest:
     '''
     def create_table(self, table, schema):
         try:
-            sql = 'CREATE TABLE IF NOT EXISTS ' + table + 
-                    ' (' + schema + ');'
+            sql = 'CREATE TABLE IF NOT EXISTS ' + table + ' (' + schema + ');'
             curr = self.conn.cursor()
             curr.execute(sql)
             self.conn.commit()
@@ -48,7 +47,7 @@ class DatabaseIngest:
     '''
     def update_record(self, table, field, criteria, pmid, data_reuse):
         try:
-            sql = 'UPDATE ' + table + ' SET ' + field ' = ' + data_reuse ' WHERE ' + criteria + ' = ' + pmid
+            sql = 'UPDATE ' + table + ' SET ' + field + ' = ' + data_reuse + ' WHERE ' + criteria + ' = ' + pmid
             cur = self.conn.cursor()
             cur.execute(sql)
             self.conn.commit()
