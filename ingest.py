@@ -43,6 +43,23 @@ class DatabaseIngest:
             print(e)
 
     '''
+    Insert unique record
+    '''
+    def insert_record_unique(self, tempTable, finalTable):
+        try:
+            sql = 'INSERT INTO ' + finalTable +
+                    ' SELECT t.Date, t.PMID, t.text, t.data, t.data_reuse
+                      FROM ' + tempTable + ' t
+                      WHERE NOT EXISTS
+                        (SELECT 1 FROM ' + finalTable + ' f
+                        WHERE t.text = f.text'
+            cur = self.conn.cursor()
+            cur.execute(sql)
+            self.conn.commit()
+        except Error as e:
+            print(e)
+
+    '''
     Update record with single criteria
     '''
     def update_record(self, table, field, criteria, pmid, data_reuse):
