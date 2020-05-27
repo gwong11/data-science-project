@@ -47,11 +47,11 @@ class DatabaseIngest:
     '''
     def insert_record_unique(self, tempTable, finalTable):
         try:
-            sql = 'INSERT INTO ' + finalTable +
-                    ' SELECT t.Date, t.PMID, t.text, t.data, t.data_reuse
-                      FROM ' + tempTable + ' t
-                      WHERE NOT EXISTS
-                        (SELECT 1 FROM ' + finalTable + ' f
+            sql = 'INSERT INTO ' + finalTable + \
+                    ' SELECT t.Date, t.PMID, t.text, t.data, t.data_reuse \
+                      FROM ' + tempTable + ' t \
+                      WHERE NOT EXISTS \
+                        (SELECT 1 FROM ' + finalTable + ' f \
                         WHERE t.text = f.text'
             cur = self.conn.cursor()
             cur.execute(sql)
