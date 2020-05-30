@@ -528,6 +528,8 @@ def model(filename, model_type):
                     count_X_new = vectorizer_count.fit_transform(df['text'])
                     # Save vectorizer
                     pickle.dump(vectorizer_count, open("/Users/G/Loyola/Spring2020/DS796/vectorizer_count.pkl", "wb"))
+                    print("CountVectorizer saved: /Users/G/Loyola/Spring2020/DS796/vectorizer_count.pkl")
+                    print()
 
                     # Re-encode training/test documents with the new vocabulary 
                     count_X_train = vectorizer_count.transform(sentences_train)
@@ -558,6 +560,8 @@ def model(filename, model_type):
                     tfidf_X_new = vectorizer_tfidf.fit_transform(df['text'])
                     # Save vectorizer
                     pickle.dump(vectorizer_tfidf, open("/Users/G/Loyola/Spring2020/DS796/vectorizer_tfidf.pkl", "wb"))
+                    print("TFIDFVectorizer saved: /Users/G/Loyola/Spring2020/DS796/vectorizer_tfidf.pkl")
+                    print()
 
                     # Re-encode training/test documents with the new vocabulary
                     tfidf_X_train = vectorizer_tfidf.transform(sentences_train)
