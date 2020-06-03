@@ -33,11 +33,12 @@ class DatabaseIngest:
     '''
     Insert record
     '''
-    def insert_record(self, table, exist_strategy, df):
+    def insert_record(self, table, exist_strategy, chunksize, df):
         try:
             df.to_sql(table, 
                     self.conn, 
-                    if_exists=exist_strategy, 
+                    if_exists=exist_strategy,
+                    chunksize=chunksize,
                     index=False)
         except Error as e:
             print(e)
