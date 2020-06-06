@@ -63,7 +63,7 @@ class DatabaseIngest:
     '''
     Update record with single criteria
     '''
-    def update_record(self, table, field, criteria, pmid, data_reuse, regex_text):
+    def update_record(self, table, field, criteria, data_reuse, regex_text):
         try:
             sql = 'UPDATE ' + table + ' SET ' + field + ' = ' + data_reuse + ' WHERE ' + criteria + ' LIKE ' + "'%" + regex_text + "%'"
             cur = self.conn.cursor()
