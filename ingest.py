@@ -53,7 +53,7 @@ class DatabaseIngest:
                       FROM ' + tempTable + ' t \
                       WHERE NOT EXISTS \
                         (SELECT 1 FROM ' + finalTable + ' f \
-                        WHERE t.text = f.text'
+                        WHERE t.text = f.text;'
             cur = self.conn.cursor()
             cur.execute(sql)
             self.conn.commit()
@@ -65,7 +65,7 @@ class DatabaseIngest:
     '''
     def update_record(self, table, field, criteria, data_reuse, regex_text):
         try:
-            sql = 'UPDATE ' + table + ' SET ' + field + ' = ' + data_reuse + ' WHERE ' + criteria + ' LIKE ' + "'%" + regex_text + "%'"
+            sql = 'UPDATE ' + table + ' SET ' + field + ' = ' + data_reuse + ' WHERE ' + criteria + ' LIKE ' + "'%" + regex_text + "%';"
             cur = self.conn.cursor()
             cur.execute(sql)
             self.conn.commit()
