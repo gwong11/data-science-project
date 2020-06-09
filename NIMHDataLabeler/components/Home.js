@@ -1,5 +1,5 @@
 import React, { Component, useEffect, useState } from 'react';
-import { ScrollView, Alert, Dimensions, StyleSheet, View, Text, ImageBackground, TextInput, Button } from 'react-native';
+import { KeyboardAvoidingView, Alert, Dimensions, StyleSheet, View, Text, ImageBackground, TextInput, Button } from 'react-native';
 import { Input } from 'react-native-elements';
 import ErrorBoundary from 'react-native-error-boundary';
 import CustomHeader from "./CustomHeader";
@@ -19,10 +19,36 @@ const CustomFallback = (props: { error: Error, resetError: Function }) => {
 const Home = (props) => {
     
     const [filename, setFilename] = useState("");
+    const [filenameURI, setFilenameURI] = useState("");
+    const [fileSize, setFileSize] = useState(0);
     const [show, setShow] = useState(false);
     const [show2, setShow2] = useState(false);
+    const [index, setIndex] = useState(0);
+    const [jsonData, setJsonData] = useState("");
     const [label, setLabel] = useState(null);
-    const [test, setTest] = useState("");
+    const [text, setText] = useState("");
+
+    useEffect(() => {
+        console.log('Index: ', index);
+        let total = Object.keys(jsonData).length;
+        if (index > 0 && index < total) {
+            console.log(jsonData[index].text);
+            setText(jsonData[index].text);
+        }
+        else {
+            if (index != 0) {
+                setFilename("");
+                setFilenameURI("");
+                setShow(false);
+                setShow2(false);
+                setLabel(null);
+                setJsonData("");
+                setIndex(0);
+                setText("");
+                alert("Training complete!");
+            }
+        }
+    }, [index]);
 
     const _pickDocument = async () => {
 	    let result = await DocumentPicker.getDocumentAsync({});
@@ -31,6 +57,8 @@ const Home = (props) => {
 
         if (result.type == "success") {
             setFilename(result.name);
+            setFilenameURI(result.uri);
+            setFileSize(result.size);
             setShow(true);
         }
         else {
@@ -38,25 +66,89 @@ const Home = (props) => {
             setShow(false);
         }
 	}
-    
+
     const _query = async () => {
-        fetch("/")
-            .then(response => response.json())
-            .then(data => { 
-                console.log(data);
-                setTest(data); 
-                setShow2(true)
-            })
-            .catch((error) => {
-                console.log(error);
+        if (filenameURI != "") {  
+            setJsonData("");
+            setText("");
+            setShow2(false);
+            const postData = new FormData();
+            postData.append("file", {
+                uri: filenameURI,
+                type: "text/csv",
+                name: filename
             });
+
+            fetch("http://192.168.1.152:8080/api/v1/query", {
+            //fetch("http://10.6.16.234:8080/api/v1/query", {
+                method: "POST",
+                body: postData})
+                .then(response => response.json())
+                .then(data => { 
+                    if (data.Reason) {
+                        alert(data.Reason);
+                    }
+                    else {
+                        setJsonData(data);
+                        //console.log(data);
+                        //console.log(Object.keys(data).length);
+                        setText(data[index].text); 
+                        setShow2(true);
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+        }
+        else {
+            alert("Something went wrong! Please make sure you upload a filename to begin!");
+            setShow(false);
+        }
+    }
+
+    const _reset = () => {
+        setFilename("");
+        setFilenameURI("");
+        setShow(false);
+        setShow2(false);
+        setLabel(null);
+        setJsonData("");
+        setIndex(0);
+        setText("");
+        alert("Reset completed!");
     }
 
     const _handleLabel = (label) => {
-        setLabel(label)
-        console.log(label)
+        setLabel(label);
+        console.log(label);
     }
 
+    const _submit = () => {
+        fetch("http://192.168.1.152:8080/api/v1/label", {
+        //fetch("http://10.6.16.234:8080/api/v1/label", {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({text: text, label: label})})
+            .then(response => response.json())
+            .then(data => { 
+                if (data.code == "SUCCESS") {
+                    console.log(data);
+                    setIndex(index+1);
+                    setLabel("");
+                }
+                else {
+                    alert(data.message);
+                }
+             })
+             .catch((error) => {
+                 console.log(error);
+             });
+    }
+
+             /*<Text style={{color: 'red', marginBottom: 40, fontSize: 15}}>Warning: Raises an error if record exists in database.</Text>*/
     return (
       <View style={styles.background}>
         <ImageBackground
@@ -84,13 +176,17 @@ const Home = (props) => {
                                     title="Query"
                                     color="green"
                                     onPress={_query}/>
-                            <Button style={styles.button} title="Reset" color="red"/>
+                            <Button style={styles.button} 
+                                    title="Reset" 
+                                    color="red"
+                                    onPress={_reset}/>
                         </View>
                         {show2 ? (
                             <View>
                                 <View style={styles.outputContainer}>
-                                    <Input editable={false}
-                                        value=""
+                                    <Input inputStyle={{ fontSize: 14, color: "black", fontWeight: 'bold' }}
+                                        editable={false}
+                                        value={ text }
                                         multiline={true}
                                     />
                                 </View>
@@ -106,7 +202,7 @@ const Home = (props) => {
                                     <Button style={styles.button} 
                                         title="Submit" 
                                         color="grey"
-                                    />
+                                        onPress={_submit}/>
                                 </View>
                             </View>
                         ) : null }
@@ -153,9 +249,8 @@ const styles = StyleSheet.create({
   outputContainer: {
       marginLeft: 50,
       marginRight: 50,
-      fontSize: 20,
       justifyContent: 'space-between',
-      padding: 10 
+      padding: 10,
   },
   labelContainer: {
       marginLeft: 180
