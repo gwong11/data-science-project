@@ -137,7 +137,10 @@ const Home = (props) => {
                 if (data.code == "SUCCESS") {
                     console.log(data);
                     setIndex(index+1);
-                    setLabel("");
+                }
+                else if (data.code == "LABEL") {
+                    setIndex(index+1);
+                    alert(data.message);
                 }
                 else {
                     alert(data.message);

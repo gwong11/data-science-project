@@ -68,6 +68,7 @@ def load_model():
 def before_request():
     # Initiate database instance
     g.db = DatabaseIngest(DATABASE)
+    #d.db_tmp = DatabaseIngest(DATABASE_TEMP)
     # Initiate analyzer instance for vectorizer
     analyzer = MyAnalyzer()
     global new
@@ -122,9 +123,10 @@ def get_query():
                 g.db.insert_record('research', 'append', 1000, df)
                 app.logger.info("Done")
             else:
-                app.logger.info("Inserting new records to research")
-                g.db.insert_record_unique('research', 'append', 1000, df)
-                app.logger.info("Done")
+                #app.logger.info("Inserting new records to research")
+                #g.db.insert_record_unique('research', 'append', 1000, df)
+                #app.logger.info("Done")
+                pass
 
             # Vectorize the text
             X = vectorizer.fit_transform(df['text'])
@@ -135,7 +137,7 @@ def get_query():
             #print(X.shape)
             #ordered_vocab = dict(sorted(vectorizer.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:100])
             #print(str(ordered_vocab))
-            for i in range(1):
+            for i in range(10):
                 query_idx, query_inst = model.query(X)
                 jsonData.append({'text': df['text'].iloc[query_idx[0]]})
                 X = csr_matrix(np.delete(X.toarray(), query_idx, axis=0))
@@ -149,24 +151,32 @@ def get_query():
 @app.route('/api/v1/label', methods=['POST'])
 def submit():
     data = request.json
+    SQL_QUERY = "SELECT * FROM research WHERE text LIKE '%" + data['text'] + "%';"
+    check_df = g.db.query_record(SQL_QUERY)
+    #print(check_df['data_reuse'].values[0])
     if 'label' in data:
-        if data['label'] != '':
-            #print(data['label'])
-            #print(type(data['label']))
-            #print(type(data['text']))
-            if int(data['label']) in [0,1]:
-                try:
-                    app.logger.info("Updating record with label!")
-                    g.db.update_record('research', 'data_reuse', 'text', data['label'], data['text'])
-                    app.logger.info("Done")
-                    response = {'message': 'Label successfully captured!', 'code': 'SUCCESS'}
-                    return make_response(jsonify(response), 200)
-                except:
-                    return make_response(jsonify({'message': 'Error: ' + str(sys.exc_info()), 'code': 'FAILURE'}))
-            elif int(data['label']) == -1:
-                return make_response(jsonify({'message': 'Quiting labeling process', 'code': 'QUIT'}))
+        if check_df['data_reuse'].values[0] is None:
+            if data['label'] != '':
+                #print(data['label'])
+                #print(type(data['label']))
+                #print(type(data['text']))
+                if int(data['label']) in [0,1]:
+                    try:
+                        app.logger.info("Updating record with label!")
+                        g.db.update_record('research', 'data_reuse', 'text', data['label'], data['text'])
+                        app.logger.info("Done")
+                        response = {'message': 'Label successfully captured!', 'code': 'SUCCESS'}
+                        return make_response(jsonify(response), 200)
+                    except:
+                        return make_response(jsonify({'message': 'Error: ' + str(sys.exc_info()), 'code': 'FAILURE'}))
+                elif int(data['label']) in [2]:
+                    return make_response(jsonify({'message': 'Quiting labeling process', 'code': 'QUIT'}))
+                else:
+                    return make_response(jsonify({'message': 'Incorrect input', 'code': 'FAILURE'}))
             else:
-                return make_response(jsonify({'message': 'Incorrect input', 'code': 'FAILURE'}))
+                return make_response(jsonify({'message': 'Need to enter a value of 0 or 1.', 'code': 'FAILURE'}))
+        else:
+            return make_response(jsonify({'message': 'Already labeled. Skipping.', 'code': 'LABEL'}))
 
     return make_response(jsonify({'message': 'Missing label', 'code': 'FAILURE'}), 400)
 
