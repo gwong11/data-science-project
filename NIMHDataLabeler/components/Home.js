@@ -151,7 +151,25 @@ const Home = (props) => {
              });
     }
 
+    const _yes = () => {
+        console.log("Yes");
+    }
+
+    const _no = () => {
+        console.log("No");
+    }
+
+    const _quit = () => {
+        console.log("Quit");
+    }
+
              /*<Text style={{color: 'red', marginBottom: 40, fontSize: 15}}>Warning: Raises an error if record exists in database.</Text>*/
+                                    /*<TextInput style={styles.labelInput}
+                                               placeholder = "Label"
+                                               placeholderTextColor = "#9a73ef"
+                                               autoCapitalize = "none"
+                                               onChangeText = {_handleLabel}
+                                    />*/
     return (
       <View style={styles.background}>
         <ImageBackground
@@ -194,18 +212,18 @@ const Home = (props) => {
                                     />
                                 </View>
                                 <View style={styles.labelContainer}>
-                                    <TextInput style={styles.labelInput}
-                                               placeholder = "Label"
-                                               placeholderTextColor = "#9a73ef"
-                                               autoCapitalize = "none"
-                                               onChangeText = {_handleLabel}
-                                    />
-                                </View>
-                                <View style={styles.submitContainer}>
                                     <Button style={styles.button} 
-                                        title="Submit" 
-                                        color="grey"
-                                        onPress={_submit}/>
+                                        title="Yes"
+                                        color="green"
+                                        onPress={_yes}/>
+                                    <Button style={styles.button} 
+                                        title="No" 
+                                        color="red"
+                                        onPress={_no}/>
+                                    <Button style={styles.button} 
+                                        title="Quit" 
+                                        color="red"
+                                        onPress={_quit}/>
                                 </View>
                             </View>
                         ) : null }
@@ -256,7 +274,13 @@ const styles = StyleSheet.create({
       padding: 10,
   },
   labelContainer: {
-      marginLeft: 180
+      marginLeft: 180,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 20,
+      marginLeft: 90,
+      marginRight: 100
   },
   labelInput: {
       width: 50,
@@ -264,12 +288,6 @@ const styles = StyleSheet.create({
       borderWidth: 1, 
       padding: 5,
   },
-  submitContainer: {
-      width: 100,
-      marginTop: 50,
-      marginLeft: 160,
-      justifyContent: 'center'
-  }
 });
 
 export default Home;
