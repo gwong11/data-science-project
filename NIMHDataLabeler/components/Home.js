@@ -50,6 +50,40 @@ const Home = (props) => {
         }
     }, [index]);
 
+    useEffect(() => {
+        console.log('Label: ', label);
+        if (label != null) {
+            fetch("http://192.168.1.152:8080/api/v1/label", {
+            //fetch("http://10.6.16.234:8080/api/v1/label", {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({text: text, label: label})})
+                .then(response => response.json())
+                .then(data => { 
+                    setLabel(null);
+                    if (data.code == "SUCCESS") {
+                        console.log(data);
+                        setIndex(index+1);
+                    }
+                    else if (data.code == "LABEL") {
+                        setIndex(index+1);
+                        alert(data.message);
+                    }
+                    else {
+                        setShow2(false);
+                        alert(data.message);
+                    }
+                })
+                .catch((error) => {
+                    setLabel(null);
+                    console.log(error);
+                });
+        }
+    }, [label]);
+
     const _pickDocument = async () => {
 	    let result = await DocumentPicker.getDocumentAsync({});
 		//alert(result.uri);
@@ -62,12 +96,12 @@ const Home = (props) => {
             setShow(true);
         }
         else {
-            alert("Please select a data file to upload!")
             setShow(false);
+            alert("Please select a data file to upload!")
         }
 	}
 
-    const _query = async () => {
+    const _query = () => {
         if (filenameURI != "") {  
             setJsonData("");
             setText("");
@@ -101,8 +135,8 @@ const Home = (props) => {
                 });
         }
         else {
-            alert("Something went wrong! Please make sure you upload a filename to begin!");
             setShow(false);
+            alert("Something went wrong! Please make sure you upload a filename to begin!");
         }
     }
 
@@ -118,58 +152,19 @@ const Home = (props) => {
         alert("Reset completed!");
     }
 
-    const _handleLabel = (label) => {
-        setLabel(label);
-        console.log(label);
-    }
-
-    const _submit = () => {
-        fetch("http://192.168.1.152:8080/api/v1/label", {
-        //fetch("http://10.6.16.234:8080/api/v1/label", {
-            method: "POST",
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({text: text, label: label})})
-            .then(response => response.json())
-            .then(data => { 
-                if (data.code == "SUCCESS") {
-                    console.log(data);
-                    setIndex(index+1);
-                }
-                else if (data.code == "LABEL") {
-                    setIndex(index+1);
-                    alert(data.message);
-                }
-                else {
-                    alert(data.message);
-                }
-             })
-             .catch((error) => {
-                 console.log(error);
-             });
-    }
-
     const _yes = () => {
-        console.log("Yes");
+        setLabel(1);
     }
 
     const _no = () => {
-        console.log("No");
+        setLabel(0);
     }
 
     const _quit = () => {
-        console.log("Quit");
+        setLabel(2);
     }
 
              /*<Text style={{color: 'red', marginBottom: 40, fontSize: 15}}>Warning: Raises an error if record exists in database.</Text>*/
-                                    /*<TextInput style={styles.labelInput}
-                                               placeholder = "Label"
-                                               placeholderTextColor = "#9a73ef"
-                                               autoCapitalize = "none"
-                                               onChangeText = {_handleLabel}
-                                    />*/
     return (
       <View style={styles.background}>
         <ImageBackground
