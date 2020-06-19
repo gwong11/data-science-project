@@ -66,7 +66,7 @@ class DatabaseIngest:
     '''
     def update_record(self, table, field, criteria, data_reuse, regex_text):
         try:
-            sql = 'UPDATE ' + table + ' SET ' + field + ' = ' + data_reuse + ' WHERE ' + criteria + ' LIKE ' + "'%" + regex_text + "%';"
+            sql = 'UPDATE ' + table + ' SET ' + field + ' = ' + str(data_reuse) + ' WHERE ' + criteria + ' LIKE ' + "'%" + regex_text + "%';"
             cur = self.conn.cursor()
             cur.execute(sql)
             self.conn.commit()
