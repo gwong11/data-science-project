@@ -7,6 +7,7 @@ import ssl
 import pandas as pd
 import sys
 import os
+import re
 import hashlib
 #import logging
 import spacy
@@ -18,7 +19,15 @@ from scipy.sparse import csr_matrix
 from ingest import DatabaseIngest
 from contextlib import closing
 
-model = None
+VECTORIZER_RE = re.compile(r'.*vect.*', re.VERBOSE)
+MODEL_RE = re.compile(r'.*model.*', re.VERBOSE)
+
+global model
+global vectorizer
+global numberOfQueries
+global modelName
+global vectorizerName
+
 app = Flask(__name__)
 app.config["DEBUG"] = True
 #logging.basicConfig(filename='labeler-app.log', 
@@ -27,7 +36,6 @@ app.config["DEBUG"] = True
 # app.logger.info
 
 DATABASE = 'research.db'
-DATABASE_TEMP = 'research_temp.db'
 
 # create a custom analyzer class
 class MyAnalyzer(object):
@@ -45,15 +53,8 @@ class MyAnalyzer(object):
         tokens = self.lemmatizer_(doc_clean)
         return([token.lemma_ for token in tokens])
 
-def vectorize(method, analyzer, data):
-    vect = None
-    if method.lower() == "tfidf":
-        vect = TfidfVectorizer(analyzer=analyzer)
-        return vectorizer.fit_transform(data)
-
+'''
 def load_model():
-    global model
-    global vectorizer
 
     # vectorizer variable refers to the global variable
     with open("vectorizer.pkl", 'rb') as fd:
@@ -62,7 +63,7 @@ def load_model():
     # model variable refers to the global variable
     with open('active_model_tfidf_SVM.sav', 'rb') as fd2:
         model = pickle.load(fd2)
-    
+'''
 
 @app.before_request
 def before_request():
@@ -83,16 +84,102 @@ def before_request():
                                       data,
                                       data_reuse
                                       """)
+
+        g.db.create_table('research_tmp', """
+                                      Date,
+                                      PMID NOT NULL,
+                                      text PRIMARY KEY NOT NULL,
+                                      data,
+                                      data_reuse
+                                      """)
+
+        g.db.create_table('setting', """
+                                      type PRIMARY KEY NOT NULL,
+                                      value NOT NULL
+                                      """)
+
         new = True
     else:
        g.db.create_connection()
        new = False
-       
 
 @app.teardown_request
 def teardown_request(exception):
     if hasattr(g, 'db'):
         g.db.close()
+
+@app.route('/api/v1/setting', methods=['POST'])
+def set_config():
+    upload_file = None
+    data = None
+    df = None
+    set_vec = False
+    set_mod = False
+    numberOfQueries = 10
+    if request.method == 'POST':
+       if 'file' in request.files:
+          upload_file = request.files['file']
+          #print(upload_file.filename)
+       try:
+           SQL_NUMBER_QUERY = "SELECT * FROM setting WHERE type LIKE '%Queries%';"
+           check_queries_df = g.db.query_record(SQL_NUMBER_QUERY)
+
+           if request.json is not None:
+               numberOfQueries == request.json['numberOfQueries']
+
+           if upload_file is not None:
+              SQL_VEC_QUERY = "SELECT * FROM setting WHERE value LIKE '%vect%';"
+              SQL_MODEL_QUERY = "SELECT * FROM setting WHERE value LIKE '%model%';"
+              check_vect_df = g.db.query_record(SQL_VEC_QUERY)
+              check_model_df = g.db.query_record(SQL_MODEL_QUERY)
+
+              if check_vect_df['type'].values[0] == "vectorizer":
+                 set_vec = True
+              elif check_model_df['type'].values[0] == "model":
+                 set_mod = True
+
+              if re.match(VECTORIZER_RE, upload_file.filename) is not None:
+                 app.logger.info("Setting vectorizer.")
+                 data = [['vectorizer', upload_file.filename]]
+                 vectorizerName = upload_file.filename
+                 df = pd.DataFrame(data, columns = ['type', 'value']) 
+                 g.db.insert_record('setting', 'append', 10, df)
+
+                 with open(upload_file.filename, 'rb') as fd:
+                    vectorizer  = pickle.load(fd)
+
+                 fd2 = open(upload_file.filename, 'wb')
+                 pickle.dump(vectorizer, fd2)
+                 fd2.close()
+              
+              elif re.match(MODEL_RE, upload_file.filename) is not None:
+                 app.logger.info("Setting Model.")
+                 data = [['model', upload_file.filename]]
+                 modelName = upload_file.filename
+                 df = pd.DataFrame(data, columns = ['type', 'value'])
+                 g.db.insert_record('setting', 'append', 10, df)
+
+                 with open(upload_file.filename, 'rb') as fd:
+                    model  = pickle.load(fd)
+
+                 fd2 = open(upload_file.filename, 'wb')
+                 pickle.dump(model, fd2)
+                 fd2.close()
+              else:
+                 return jsonify({'Reason': 'Please upload files that contain either vect (for vectorizer) or model (for model)'})
+           elif numberOfQueries == 10 and len(check_queries_df['type'].values) == 0:
+              app.logger.info("Setting numberOfQueries.")
+              data = [['numberOfQueries', numberOfQueries]]
+              df = pd.DataFrame(data, columns = ['type', 'value'])
+              g.db.insert_record('setting', 'append', 10, df)
+           elif numberOfQueries != 10:
+              print(numberOfQueries)
+            
+           app.logger.info("Successfully loaded!")
+           response = {'message': 'Successfully loaded!!', 'code': 'SUCCESS'}
+           return make_response(jsonify(response), 200)
+       except: 
+           return jsonify({'Reason': 'Error: ' + str(sys.exc_info())})
 
 '''
 @app.route('/', methods=['GET'])
@@ -102,51 +189,67 @@ def home_endpoint():
 @app.route('/api/v1/query', methods=['POST'])
 def get_query():
     # Works only for a single sample
+    setVectorizer = False
+    setModel = False
+
     if request.method == 'POST':
+        if 'vectorizer' in globals():
+            setVectorizer = True
+
+        if 'model' in globals():
+            setModel = True
+
         jsonData = []
         csv_file = request.files['file']
-        try:
-            df = pd.read_csv(csv_file, header=0)
-            df.dropna(inplace=True)
-            df.drop_duplicates(subset='text', keep='last', inplace=True)
-            #df['text_md5'] = df.apply(lambda row: hashlib.md5(row.text.encode('utf-8')).digest(), axis=1)
-            df['data_reuse'] = None
-            #print(df.shape)
-            #print(df.groupby(['text']).count())
 
-            #df.loc[0, 'data_reuse'] = 1
-            #print(df['text'].iloc[0])
-            #print(df.head(10))
-            #print("Count of missing values: \n" + str(df.isnull().sum()))
-            if new:
-                app.logger.info("Creating the database: research")
-                g.db.insert_record('research', 'append', 1000, df)
-                app.logger.info("Done")
-            else:
-                #app.logger.info("Inserting new records to research")
-                #g.db.insert_record_unique('research', 'append', 1000, df)
-                #app.logger.info("Done")
-                pass
+        if setVectorizer != False and setModel != False:
+            try:
+               df = pd.read_csv(csv_file, header=0)
+               df.dropna(inplace=True)
+               df.drop_duplicates(subset='text', keep='last', inplace=True)
+               #df['text_md5'] = df.apply(lambda row: hashlib.md5(row.text.encode('utf-8')).digest(), axis=1)
+               df['data_reuse'] = None
+               #print(df.shape)
+               #print(df.groupby(['text']).count())
 
-            # Vectorize the text
-            X = vectorizer.fit_transform(df['text'])
-            # Save vectorizer
-            pickle.dump(vectorizer, open("vectorizer.pkl", "wb"))
+               #df.loc[0, 'data_reuse'] = 1
+               #print(df['text'].iloc[0])
+               #print(df.head(10))
+               #print("Count of missing values: \n" + str(df.isnull().sum()))
+               if check_count_df["COUNT(*)"].values[0] == 0:
+                  app.logger.info("Creating the database: research")
+                  g.db.insert_record('research', 'append', 1000, df)
+                  app.logger.info("Done")
+               else:
+                  print("Adding new record")
+                  #app.logger.info("Inserting new records to research")
+                  #g.db.insert_record('research_tmp', 'append', 1000, df)
+                  #g.db.insert_record_unique('research_tmp', 'research')
+                  #g.db.delete_record('research_tmp')
+                  #app.logger.info("Done")
 
-            #print(X.toarray())
-            #print(X.shape)
-            #ordered_vocab = dict(sorted(vectorizer.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:100])
-            #print(str(ordered_vocab))
-            for i in range(15):
-                query_idx, query_inst = model.query(X)
-                jsonData.append({'text': df['text'].iloc[query_idx[0]]})
-                X = csr_matrix(np.delete(X.toarray(), query_idx, axis=0))
+               # Vectorize the text
+               X = vectorizer.fit_transform(df['text'])
+               # Save vectorizer
+               fd = open(vectorizerName, "wb")
+               pickle.dump(vectorizer, fd)
+               fd.close()
 
-        except:
-            return jsonify({'Reason': 'Error: ' + str(sys.exc_info())})
+               #print(X.toarray())
+               #print(X.shape)
+               #ordered_vocab = dict(sorted(vectorizer.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:100])
+               #print(str(ordered_vocab))
+               for i in range(numberOfQueries):
+                  query_idx, query_inst = model.query(X)
+                  jsonData.append({'text': df['text'].iloc[query_idx[0]]})
+                  X = csr_matrix(np.delete(X.toarray(), query_idx, axis=0))
 
-    #print(request.files['file'])
-    return jsonify(jsonData)
+               #print(request.files['file'])
+               return jsonify(jsonData)
+            except:
+               return jsonify({'Reason': 'Error: ' + str(sys.exc_info())})
+        else:
+            return jsonify({'Reason': 'Make sure vectorizer, and model are configured.'})
 
 @app.route('/api/v1/label', methods=['POST'])
 def submit():
@@ -185,7 +288,7 @@ if __name__ == '__main__':
     #context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     #context.load_cert_chain("cert.pem", "key.pem")
 
-    load_model()  # load model at the beginning once only
+    #load_model()  # load model at the beginning once only
 
     #app.run(threaded=True, host='192.168.1.152', port=8080)
     app.run(threaded=True, host='0.0.0.0', port=8080)

@@ -22,4 +22,4 @@ nimhresearch.db
 NIMHDataLabeler/node_modules/*
 NIMHDataLabeler/*lock*
 NIMHDataLabeler/*.alt
-
+NIMHDataLabeler/*app.log*

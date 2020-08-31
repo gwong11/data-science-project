@@ -179,7 +179,7 @@ const Home = (props) => {
                                     title="Upload File" 
                                     onPress={_pickDocument}/>
                             {show ? (
-                                <Input  editable={false} 
+                                <Input  editable={ false } 
                                         leftIcon={{ type: 'font-awesome', name: 'file' }}
                                         value={ filename } 
                                         multiline={true}
@@ -201,7 +201,7 @@ const Home = (props) => {
                             <View>
                                 <View style={styles.outputContainer}>
                                     <Input inputStyle={{ fontSize: 14, color: "black", fontWeight: 'bold' }}
-                                        editable={false}
+                                        editable={ false }
                                         value={ text }
                                         multiline={true}
                                     />

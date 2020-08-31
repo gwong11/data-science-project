@@ -242,7 +242,9 @@ def method_ML(model, ML_method, vectorizer_method, X_train, X_test, y_train, y_t
     #plt.show()
     plt.close()
     
-    pickle.dump(model, open(model_filename, 'wb'))
+    fd = open(model_filename, 'wb')
+    pickle.dump(model, fd)
+    fd.close()
     print("Model saved: ", model_filename)
     print()
 
@@ -527,7 +529,9 @@ def model(filename, model_type):
                     # Tokenize, add vocabulary, and encode new data
                     count_X_new = vectorizer_count.fit_transform(df['text'])
                     # Save vectorizer
-                    pickle.dump(vectorizer_count, open("/Users/G/Loyola/Spring2020/DS796/vectorizer_count.pkl", "wb"))
+                    fd = open("/Users/G/Loyola/Spring2020/DS796/vectorizer_count.pkl", "wb")
+                    pickle.dump(vectorizer_count, fd)
+                    fd.close()
                     print("CountVectorizer saved: /Users/G/Loyola/Spring2020/DS796/vectorizer_count.pkl")
                     print()
 
@@ -559,7 +563,9 @@ def model(filename, model_type):
                     # Tokenize, add vocabulary, and encode new data
                     tfidf_X_new = vectorizer_tfidf.fit_transform(df['text'])
                     # Save vectorizer
-                    pickle.dump(vectorizer_tfidf, open("/Users/G/Loyola/Spring2020/DS796/vectorizer_tfidf.pkl", "wb"))
+                    fd = open("/Users/G/Loyola/Spring2020/DS796/vectorizer_tfidf.pkl", "wb")
+                    pickle.dump(vectorizer_tfidf, fd)
+                    fd.close()
                     print("TFIDFVectorizer saved: /Users/G/Loyola/Spring2020/DS796/vectorizer_tfidf.pkl")
                     print()
 
@@ -675,7 +681,9 @@ def active_learning(vectorizer_method, X_train, y_train, X_test, y_test, orig_df
         #plt.show()
         plt.close()
 
-    pickle.dump(learner, open(model_filename, 'wb'))
+    fd = open(model_filename, 'wb')
+    pickle.dump(learner, fd)
+    fd.close()
     print("Model saved: ", model_filename)
     print()
 
