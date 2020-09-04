@@ -74,6 +74,17 @@ class DatabaseIngest:
             print(e)
 
     '''
+    Delete a record
+    '''
+    def delete_single_record(self, table, field, value):
+        try:
+            sql = 'DELETE FROM ' + table + ' WHERE ' + field + ' == ' value;     
+            cur = self.conn.cursor()
+            self.conn.commit()
+        except Error as e:
+            print(e)
+
+    '''
     Delete all record
     '''
     def delete_record(self, table):
