@@ -143,7 +143,7 @@ const Settings = props => {
                 body: JSON.stringify({type: 'numberOfQueries', value: numberOfQueries})})
                 .then(response => response.json())
                 .then(data => {
-                    console.log(numberOfQueries)
+                    console.log(data)
                 })
                 .catch((error) => {
                     setNumberOfQueries(10);

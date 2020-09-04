@@ -127,7 +127,7 @@ def set_config():
            check_queries_df = g.db.query_record(SQL_NUMBER_QUERY)
 
            if request.json is not None:
-               numberOfQueries == request.json['numberOfQueries']
+               numberOfQueries = request.json['value']['numberOfQueries']
 
            if upload_file is not None:
               SQL_VEC_QUERY = "SELECT * FROM setting WHERE value LIKE '%vect%';"
@@ -175,9 +175,9 @@ def set_config():
               df = pd.DataFrame(data, columns = ['type', 'value'])
               g.db.insert_record('setting', 'append', 10, df)
            elif numberOfQueries != 10:
-              #print(numberOfQueries)
-              app.logger.info("Deleting numberOfQueries")
-              g.db.delete_single_record('setting', 'setting', 'type', 'numberOfQueries')
+              if(len(check_queries_df['type'].values) != 0):
+                app.logger.info("Deleting numberOfQueries")
+                g.db.delete_single_record('setting', 'type', 'numberOfQueries')
 
               app.logger.info("Setting numberOfQueries.")
               data = [['numberOfQueries', numberOfQueries]]
@@ -248,7 +248,7 @@ def get_query():
                #print(X.shape)
                #ordered_vocab = dict(sorted(vectorizer.vocabulary_.items(), key=lambda x: x[1], reverse=True)[:100])
                #print(str(ordered_vocab))
-               for i in range(numberOfQueries):
+               for i in range(int(numberOfQueries)):
                   query_idx, query_inst = model.query(X)
                   jsonData.append({'text': df['text'].iloc[query_idx[0]]})
                   X = csr_matrix(np.delete(X.toarray(), query_idx, axis=0))
