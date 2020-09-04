@@ -38,7 +38,7 @@ class DatabaseIngest:
         try:
             df.to_sql(table, 
                     self.conn, 
-                    if_exists=exist_strategy,
+                    if_exists=exist_strategy, 
                     chunksize=chunksize,
                     index=False)
         except Error as e:
@@ -78,7 +78,8 @@ class DatabaseIngest:
     '''
     def delete_single_record(self, table, field, value):
         try:
-            sql = 'DELETE FROM ' + table + ' WHERE ' + field + ' == '  + value;     
+            sql = 'DELETE FROM ' + table + ' WHERE ' + field + ' == '  + "'" + value + "';";
+            print(sql)
             cur = self.conn.cursor()
             self.conn.commit()
         except Error as e:
