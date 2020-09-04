@@ -27,6 +27,8 @@ global vectorizer
 global numberOfQueries
 global modelName
 global vectorizerName
+global query_idx
+global query_inst
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -173,7 +175,14 @@ def set_config():
               df = pd.DataFrame(data, columns = ['type', 'value'])
               g.db.insert_record('setting', 'append', 10, df)
            elif numberOfQueries != 10:
-              print(numberOfQueries)
+              #print(numberOfQueries)
+              app.logger.info("Deleting numberOfQueries")
+              g.db.delete_single_record('setting', 'setting', 'type', 'numberOfQueries')
+
+              app.logger.info("Setting numberOfQueries.")
+              data = [['numberOfQueries', numberOfQueries]]
+              df = pd.DataFrame(data, columns = ['type', 'value'])
+              g.db.insert_record('setting', 'append', 10, df)
             
            app.logger.info("Successfully loaded!")
            response = {'message': 'Successfully loaded!!', 'code': 'SUCCESS'}
@@ -263,6 +272,14 @@ def submit():
             if data['label'] != None:
                 if data['label'] in [0,1]:
                     try:
+                        app.logger.info("Training model with label.")
+                        model.teach(query_inst.reshape(1, -1), data['label'])
+
+                        # Save vectorizer
+                        fd = open(modelName, "wb")
+                        pickle.dump(model, fd)
+                        fd.close()
+
                         app.logger.info("Updating record with label!")
                         g.db.update_record('research', 'data_reuse', 'text', data['label'], data['text'])
                         app.logger.info("Done")
