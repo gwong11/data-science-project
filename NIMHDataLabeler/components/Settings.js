@@ -27,6 +27,7 @@ const Settings = props => {
   const [show, setShow] = useState(false);
   const [show2, setShow2] = useState(false);
 
+  /*
   useEffect(() => {
       console.log(vectorizer);
       if (vectorizer != "") { 
@@ -87,7 +88,7 @@ const Settings = props => {
                 console.log(error);
              });
       }
-  }, [model]);
+  }, [model]); */
 
   const _pickVectorizer = async() => {
         let result = await DocumentPicker.getDocumentAsync({});
@@ -124,32 +125,81 @@ const Settings = props => {
     }
 
   const _setVectorizer = () => {
-      console.log("Vect");
+      console.log(vectorizer);
+      const postData = new FormData();
+      postData.append("file", {
+         uri: vectorizerURI,
+         type: "application/octem-stream",
+         name: vectorizer
+      });
+      fetch("http://192.168.1.152:8080/api/v1/setting", {
+      //fetch("http://10.6.16.234:8080/api/v1/setting", {
+         method: "POST",
+         body: postData})
+         .then(response => response.json())
+         .then(data => {
+            if (data.Reason) {
+               alert(data.Reason);
+            }
+            else {
+               //console.log(Object.keys(data).length);
+               console.log(data);
+               alert(data.message);
+               setShow(true);
+            }
+         })
+         .catch((error) => {
+            console.log(error);
+         });
   }
 
   const _setModel = () => {
-      console.log("Mod");
+      console.log(model);
+      const postData = new FormData();
+      postData.append("file", {
+         uri: modelURI,
+         type: "application/octem-stream",
+         name: model
+      });
+      fetch("http://192.168.1.152:8080/api/v1/setting", {
+      //fetch("http://10.6.16.234:8080/api/v1/setting", {
+         method: "POST",
+         body: postData})
+         .then(response => response.json())
+         .then(data => {
+            if (data.Reason) {
+               alert(data.Reason);
+            }
+            else {
+               //console.log(Object.keys(data).length);
+               console.log(data);
+               alert(data.message);
+               setShow2(true);
+            }
+         })
+         .catch((error) => {
+            console.log(error);
+         });
   }
 
   const _setNumberOfQueries = () => {
       console.log('Queries: ', numberOfQueries);
-        if (numberOfQueries != 10) {
-            fetch("http://192.168.1.152:8080/api/v1/setting", {
-                method: "POST",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({type: 'numberOfQueries', value: numberOfQueries})})
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data)
-                })
-                .catch((error) => {
-                    setNumberOfQueries(10);
-                    console.log(error);
-                });
-        }
+      fetch("http://192.168.1.152:8080/api/v1/setting", {
+         method: "POST",
+         headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({type: 'numberOfQueries', value: numberOfQueries})})
+         .then(response => response.json())
+         .then(data => {
+            console.log(data)
+            alert(data.message);
+         })
+         .catch((error) => {
+            setNumberOfQueries(10);
+            console.log(error);
+          });
   }
 
   return (
@@ -167,12 +217,16 @@ const Settings = props => {
                         onPress={_pickVectorizer}/>
                     {show ? (
                         <Input  editable={ false }
-                                leftIcon={{ type: 'font-awesome', name: 'file' }}
-                                value={ vectorizer }
-                                multiline={true}
-                                leftIconContainerStyle = {{marginLeft:10, padding: 10}}
+                            leftIcon={{ type: 'font-awesome', name: 'file' }}
+                            value={ vectorizer }
+                            multiline={true}
+                            leftIconContainerStyle = {{marginLeft:10, padding: 10}}
                          />
                      ) : null }
+                      <Button style={styles.input}
+                         title="Save"
+                         color="green"
+                         onPress={_setVectorizer}/>
                 </View>
                 <View style={styles.inputContainer}>
                     <Button style={styles.input}
@@ -180,13 +234,17 @@ const Settings = props => {
                         color="blue"
                         onPress={_pickModel}/>
                     {show2 ? (
-                        <Input  editable={ false }
-                                leftIcon={{ type: 'font-awesome', name: 'file' }}
-                                value={ model }
-                                multiline={true}
-                                leftIconContainerStyle = {{marginLeft:10, padding: 10}}
+                         <Input  editable={ false }
+                             leftIcon={{ type: 'font-awesome', name: 'file' }}
+                             value={ model }
+                             multiline={true}
+                             leftIconContainerStyle = {{marginLeft:10, padding: 10}}
                          />
                      ) : null }
+                        <Button style={styles.input}
+                           title="Save"
+                           color="green"
+                           onPress={_setModel}/>
                 </View>
                 <View style={styles.inputContainer}>
                    <Input  
@@ -216,7 +274,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: -20,
     marginLeft: 20,
     padding: 25,
   },

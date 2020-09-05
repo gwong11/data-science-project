@@ -22,14 +22,6 @@ from contextlib import closing
 VECTORIZER_RE = re.compile(r'.*vect.*', re.VERBOSE)
 MODEL_RE = re.compile(r'.*model.*', re.VERBOSE)
 
-global model
-global vectorizer
-global numberOfQueries
-global modelName
-global vectorizerName
-global query_idx
-global query_inst
-
 app = Flask(__name__)
 app.config["DEBUG"] = True
 #logging.basicConfig(filename='labeler-app.log', 
@@ -112,6 +104,12 @@ def teardown_request(exception):
 
 @app.route('/api/v1/setting', methods=['POST'])
 def set_config():
+    global model
+    global vectorizer
+    global numberOfQueries
+    global modelName
+    global vectorizerName
+
     upload_file = None
     data = None
     df = None
@@ -137,36 +135,49 @@ def set_config():
 
               if check_vect_df['type'].values[0] == "vectorizer":
                  set_vec = True
-              elif check_model_df['type'].values[0] == "model":
-                 set_mod = True
+                 vectorizerName = check_vect_df['value'].values[0]
 
-              if re.match(VECTORIZER_RE, upload_file.filename) is not None:
+                 with open(vectorizerName, 'rb') as fd:
+                    vectorizer  = pickle.load(fd)
+
+              if check_model_df['type'].values[0] == "model":
+                 set_mod = True
+                 modelName = check_model_df['value'].values[0]
+
+                 with open(modelName, 'rb') as fd:
+                    model  = pickle.load(fd)
+
+              if re.match(VECTORIZER_RE, upload_file.filename) is not None and set_vec is not True:
                  app.logger.info("Setting vectorizer.")
                  data = [['vectorizer', upload_file.filename]]
                  vectorizerName = upload_file.filename
                  df = pd.DataFrame(data, columns = ['type', 'value']) 
                  g.db.insert_record('setting', 'append', 10, df)
 
-                 with open(upload_file.filename, 'rb') as fd:
-                    vectorizer  = pickle.load(fd)
-
                  fd2 = open(upload_file.filename, 'wb')
                  pickle.dump(vectorizer, fd2)
                  fd2.close()
+
+                 with open(upload_file.filename, 'rb') as fd:
+                    vectorizer  = pickle.load(fd)
               
-              elif re.match(MODEL_RE, upload_file.filename) is not None:
+              elif re.match(MODEL_RE, upload_file.filename) is not None and set_mod is not True:
                  app.logger.info("Setting Model.")
                  data = [['model', upload_file.filename]]
                  modelName = upload_file.filename
                  df = pd.DataFrame(data, columns = ['type', 'value'])
                  g.db.insert_record('setting', 'append', 10, df)
 
-                 with open(upload_file.filename, 'rb') as fd:
-                    model  = pickle.load(fd)
-
                  fd2 = open(upload_file.filename, 'wb')
                  pickle.dump(model, fd2)
                  fd2.close()
+
+                 with open(upload_file.filename, 'rb') as fd:
+                    model  = pickle.load(fd)
+
+              elif set_vec is True or set_mod is True:
+                 response = {'message': 'Already loaded!!', 'code': 'SUCCESS'}
+                 return make_response(jsonify(response), 200)
               else:
                  return jsonify({'Reason': 'Please upload files that contain either vect (for vectorizer) or model (for model)'})
            elif numberOfQueries == 10 and len(check_queries_df['type'].values) == 0:
@@ -198,10 +209,13 @@ def home_endpoint():
 @app.route('/api/v1/query', methods=['POST'])
 def get_query():
     # Works only for a single sample
+    global query_idx
+    global query_inst
     setVectorizer = False
     setModel = False
 
     if request.method == 'POST':
+        #print(numberOfQueries)
         if 'vectorizer' in globals():
             setVectorizer = True
 
@@ -225,6 +239,8 @@ def get_query():
                #print(df['text'].iloc[0])
                #print(df.head(10))
                #print("Count of missing values: \n" + str(df.isnull().sum()))
+               SQL_COUNT_QUERY = "SELECT COUNT(*) FROM research;"
+               check_count_df = g.db.query_record(SQL_COUNT_QUERY)
                if check_count_df["COUNT(*)"].values[0] == 0:
                   app.logger.info("Creating the database: research")
                   g.db.insert_record('research', 'append', 1000, df)
@@ -273,12 +289,13 @@ def submit():
                 if data['label'] in [0,1]:
                     try:
                         app.logger.info("Training model with label.")
-                        model.teach(query_inst.reshape(1, -1), data['label'])
+                        #print(query_inst)
+                        #model.teach(query_inst.reshape(1, -1), data['label'])
 
-                        # Save vectorizer
-                        fd = open(modelName, "wb")
-                        pickle.dump(model, fd)
-                        fd.close()
+                        # Save model
+                        #fd = open(modelName, "wb")
+                        #pickle.dump(model, fd)
+                        #fd.close()
 
                         app.logger.info("Updating record with label!")
                         g.db.update_record('research', 'data_reuse', 'text', data['label'], data['text'])
